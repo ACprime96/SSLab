@@ -5,7 +5,7 @@
 #include <map>
 using namespace std;
 
-map <string, string> deftab;
+map <string, string> deftab,argtab;
 map<string,string>::iterator iter;
 string a1,a2,a3,r1,r2,r3;
 
@@ -24,11 +24,18 @@ void token1(string line,string&l,string &op,string &oper)
     getline(s, op, ',');
     getline(s, oper, '\n');
 }
-
+//to be added for parameters
+void findandreplaceALL (string &data,string toSearch,string replaceStr) {
+	size_t pos = data.find(toSearch);
+	while( pos != string::npos ){
+		data.replace(pos,toSearch.size(),replaceStr);
+		pos = data.find(toSearch,pos+toSearch.size());
+	}
+}
 void parseInput()
 {
     fstream input_file, output_file;
-    string line, label, opcode, operand,mname;
+    string line, label, opcode, operand,mname;string data;
 
     // Open files
     input_file.open("macroinput.txt", ios::in );
@@ -46,8 +53,11 @@ void parseInput()
         }
         if (opcode == "MACRO")
         {
-        	token1(operand,a1,a2,a3);//takes parameter from macro definition
             mname = label;
+            size_t p=operand.find('&');
+            if(p!=string::npos){
+            	argtab[mname]=operand;
+            }
             stringstream macro;
             while(getline(input_file,line))
             {
@@ -67,10 +77,22 @@ void parseInput()
         {
             output_file<<"."<<opcode<<endl;
             // Write the label (if any) before macro call to file
+            if(argtab[opcode]!=""){
+            token1(argtab[opcode],a1,a2,a3);//takes parameters from macro defn
             token1(operand,r1,r2,r3);//takes parameters from macro call
-            output_file << label;            
+            output_file << label;
+            data=iter->second;
+            //EXTREME JUGAAD......
+            findandreplaceALL(data,a1,r1);
+  	    findandreplaceALL(data,a2,r2);
+       	    findandreplaceALL(data,a3,r3);        
             // Write out contents of macro_defintion to output file
-            output_file << iter->second << endl;            
+            output_file << data << endl;
+            }
+            else{
+            output_file << label;
+            output_file << iter->second << endl;
+            }                    
         }
 
         else
@@ -80,28 +102,8 @@ void parseInput()
             }
   }
 }
-//to be added for parameters
-void findandreplaceALL (string &data,string toSearch,string replaceStr) {
-	size_t pos = data.find(toSearch);
-	while( pos != string::npos ){
-		data.replace(pos,toSearch.size(),replaceStr);
-		pos = data.find(toSearch,pos+toSearch.size());
-	}
-}
 int main ()
 {
   parseInput();
-  //to be added for parameters
-  fstream ifile("macrooutput.txt",ios::in);
-  fstream ofile("best.txt",ios::out);
-  stringstream s1;
-  s1 << ifile.rdbuf();
-  string data = s1.str();
-  findandreplaceALL(data,a1,r1);
-  findandreplaceALL(data,a2,r2);
-  findandreplaceALL(data,a3,r3);
-  ofile << data;
-  ifile.close();
-  ofile.close();
   return 0;
 }
